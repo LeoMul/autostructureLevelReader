@@ -295,6 +295,7 @@ def read_levels_and_output(levels,csf_strings,num_levels):
 
 import linecache
 
+
 def read_oic_and_output(oic,csf_strings,num_levels,unit):
     #format string in as for oic output is
     #10240 FORMAT(7I5,F15.6,I10) in subroutine diagfs.
@@ -306,17 +307,22 @@ def read_oic_and_output(oic,csf_strings,num_levels,unit):
     #and handle both formatted and unformatted output.
     
     x = linecache.getline(oic, len(csf_strings) + 6).split()
-    try:
-        level_data = np.loadtxt(oic,skiprows=len(csf_strings) + 7,max_rows=int(x[1])) 
-    except:
-        import sys 
-        print('failure in reading - it is possible that you have too many levels.')
-        print('recommend trying the edit to autostructure recommended in as_lib.py, function read_oic_and_output')
-        sys.exit()
+    numLevelsInFile = int(x[1])
+    
+    gg = open(oic,'r')
+    for ii in range(0,len(len(csf_strings) + 7)):
+        gg.readline()
+    ##try:
+    ##    level_data = np.loadtxt(oic,skiprows=len(csf_strings) + 7,max_rows=int(x[1])) 
+    ##except:
+    ##    import sys 
+    ##    print('failure in reading - it is possible that you have too many levels.')
+    ##    print('recommend trying the edit to autostructure recommended in as_lib.py, function read_oic_and_output')
+    ##    sys.exit()
 
     #print(np.shape(terms_data))
-    if num_levels > np.shape(level_data)[0]:
-        num_levels = np.shape(level_data)[0]
+    if num_levels > numLevelsInFile:
+        num_levels = numLevelsInFile
 
     output_string = '{:5},   {:12.8f},     {}  {}   {:4}'
 
@@ -326,14 +332,17 @@ def read_oic_and_output(oic,csf_strings,num_levels,unit):
     header = 'Index,       Energy(Ry),     CSF(TERM),        J,     LV'
     print(header)
     for kk in range(0,num_levels):
-        line = level_data[kk]
+        
+        line = decodeOICLineFormatted(gg.readline)
+        
+        #line = level_data[kk]
 
         j = int(line[5]) / 2
         lv = int(line[1])
         multiplicity = line[3]
         angular = line[4]
         cf_number = int(line[6]-1)
-        energy_ryd = line[-1]
+        energy_ryd = line[7]
 
         term_string = '('+str(int(abs(multiplicity))) + translate_angular(int(angular))
 
@@ -348,6 +357,35 @@ def read_oic_and_output(oic,csf_strings,num_levels,unit):
         print(output_string.format(kk+1,energy_ryd,csf_strings[cf_number] + term_string.upper(),j,lv))
 
     return 0
+
+    #format string in as for oic output is
+    #10240 FORMAT(7I5,F15.6,I10) in subroutine diagfs.
+    #for this routine i may want to edit it to: 
+    #10240 FORMAT(7(I5,1X),F15.6,I10)
+    #the fortranformat package would take care of this but make it hilariously slow. 
+    #it might be an idea to incorporate an oic reader in fortran itself 
+    #and handle both formatted and unformatted output.
+    
+
+
+def decodeOICLineFormatted(lineString):
+    #format string in as for oic output is
+    #10240 FORMAT(7I5,F15.6,I10) in subroutine diagfs.
+    #print(lineString)
+    line = []
+    line.append( int(lineString[0:5]))
+    line.append( int(lineString[5:10]))
+    line.append( int(lineString[10:15]))
+    line.append( int(lineString[15:20]))
+    line.append( int(lineString[20:25]))
+    line.append( int(lineString[25:30]))
+    line.append( int(lineString[30:35]))
+    line.append( float(lineString[35:50]))
+    if len(lineString)>56:
+        print('continuum')
+    #print(line)
+    
+    return line 
 
 def read_oic_into_list_of_eigenstates(oic,csf_strings,num_levels,factor,unit,core,override):
 
@@ -364,6 +402,8 @@ def read_oic_into_list_of_eigenstates(oic,csf_strings,num_levels,factor,unit,cor
 
     #print('skip=',skip)
     x = linecache.getline(oic, skip + 6).split()
+    
+    
     #print(x)
     #evil hack, idk why it works this way. 
     if len(x) >4:
@@ -374,11 +414,16 @@ def read_oic_into_list_of_eigenstates(oic,csf_strings,num_levels,factor,unit,cor
     if override != 0:
         print('override=',override,'skiprows=',skip + 7 + override)
     #print(int(x[1]))
-    level_data = np.loadtxt(oic,skiprows=skip + 7 + override,max_rows=int(x[1])) 
+    #level_data = np.loadtxt(oic,skiprows=skip + 7 + override,max_rows=int(x[1])) 
+    numLevelsInFile = int(x[1])
+    gg = open(oic,'r')
+    for _ in range(0,(len(csf_strings) + 7 + override)):
+        gg.readline()
+        
     #print(level_data)
     #print(np.shape(terms_data))
-    if num_levels > np.shape(level_data)[0]:
-        num_levels = np.shape(level_data)[0]
+    if num_levels > numLevelsInFile:
+        num_levels = numLevelsInFile
 
     #header = 'Index       Energy(Ry)     CSF(TERM)        J     LV'
     #print(header)
@@ -386,7 +431,8 @@ def read_oic_into_list_of_eigenstates(oic,csf_strings,num_levels,factor,unit,cor
     states = []
     fracJ = False
     for kk in range(0,num_levels):
-        line = level_data[kk]
+        #line = level_data[kk]
+        line = decodeOICLineFormatted(gg.readline())
         #print(line)
         if int(line[5]) % 2 ==1:
             fracJ = True
@@ -403,7 +449,7 @@ def read_oic_into_list_of_eigenstates(oic,csf_strings,num_levels,factor,unit,cor
         multiplicity = line[3]
         angular = line[4]
         cf_number = int(line[6]-1)
-        energy_ryd = line[-1]*factor
+        energy_ryd = line[7]*factor
 
         parity = 0
         if multiplicity < 0:
@@ -439,7 +485,7 @@ def read_oic_into_list_of_eigenstates(oic,csf_strings,num_levels,factor,unit,cor
             if len(state.label_string) < max_length:
                 #print('hello')
                 state.label_string = state.label_string + (max_length-length)*' '
-
+    gg.close()
     return states
 
 def translate_angular(angular_number):
@@ -813,7 +859,7 @@ def read_olg_for_ci_matrix(groups,group_sizes):
     while checker: 
         ii+=1 
         #TODO: this relies on there being a space.. 
-        #this was gauranteed by making the global repaclement
+        #this can be gauranteed by making the global repaclement
         # 10050 FORMAT(I5,I4,4I3,F14.5,F14.6,I3,I4,10F8.4)
 
         # 10050 FORMAT(I5,1X,I4,4I3,F14.5,F14.6,I3,I4,10F8.4)
