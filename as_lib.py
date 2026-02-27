@@ -808,51 +808,49 @@ def read_olg_for_groups():
 
     
 
+def read_eigenvector(blocksize,line,f):
 
+    vector = np.zeros(blocksize)
+    veciter = 0 
+    #print(line[0:8])
+    
+    tt = len(line)
+    #print(tt)
+    
+    #while veciter < blocksize:
+    offset = 0
+    for _ in range(0, blocksize):    
+        #print('    ',line[(veciter)*8:(veciter+1)*8])
+        start = (veciter-offset)*8
+        end = (veciter+1-offset)*8
+        #print(end)
+        if (end) > tt:
+            #lastPosition = f.tell()
+            line = f.readline()[56:]
+            #print('new line?')
+            tt = len(line)
+            offset = veciter
+            #print(offset)
+            start = (veciter-offset)*8
+            end = (veciter+1-offset)*8
+
+        #print('line content:',line[start:end])
+        vector[veciter] = float(line[start:end])
+        #print(vector[veciter],end,tt)
+        veciter+=1
+    
+    #print(vector,veciter)
+
+    norm = np.dot(vector,vector)
+    if (abs(norm-1.0) >1e-3):
+        print('potential norm problem')
+    return vector
 
 def read_olg_for_ci_matrix(groups,group_sizes):
     total = 0
     f = open('olg','r')
-    def read_eigenvector(blocksize,line):
-        #blocksize = 41
-        vector = np.zeros(blocksize)
-        veciter = 0
-        vector_isolated = line[10:]
-        #print(line[10:])
-        limit = 6 
-        for ii in range(0,min(len(vector_isolated),blocksize)):
-            veciter+=1 
-            if line[ii][0] == '-':
-                limit = 8 
-            else:
-                limit = 7
-            #vector[ii]
-            vector[ii] = float(vector_isolated[ii][0:limit].replace("*",""))
-        #print(vector,veciter)
+    
 
-        while (veciter < blocksize):
-            line = f.readline().split()
-            for ii in range(0,len(line)):
-                if veciter>=blocksize:
-                    break
-                #print(line[ii])
-                if line[ii][0] == '-':
-                    limit = 7 
-                else:
-                    limit = 6
-                if ((veciter == blocksize-1) and len(line[ii] )>limit ):
-                    vector[veciter] = float(line[ii][0:limit])
-                else:
-                    vector[veciter] = line[ii]
-                veciter+=1 
-                #print(veciter,blocksize)
-
-
-            #print(vector,veciter)
-        norm = np.dot(vector,vector)
-        if (abs(norm-1.0) >1e-3):
-            print('potential norm problem')
-        return vector
 
     checker = True 
     ii=0
@@ -884,7 +882,7 @@ def read_olg_for_ci_matrix(groups,group_sizes):
     for jj in range(0,num_blocks):
         blocksize = group_sizes[jj]
         #print('new block',blocksize)
-        for kk in range(0,blocksize):
+        for _ in range(0,blocksize):
             total+=1
 
             #print(jj,blocksize,kk,total)
@@ -895,13 +893,18 @@ def read_olg_for_ci_matrix(groups,group_sizes):
             #print(requested_level)
 
             while checker:
-                line = f.readline().split()
+                lineUnsplit = f.readline()
+                line = lineUnsplit[56:]
+                #print('line split 57', line)
                 if len(line) > 1:
-                    if float(line[0]) == requested_level:
-                        #we are in the correct level
-                        checker = False
+                    if lineUnsplit[0:5] != '     ':
+                        if int(lineUnsplit[0:5]) == requested_level:
+                            #we are in the correct level
+                            checker = False
+
+                    
             #print('reading level',requested_level,'block size = ',blocksize)
-            vector = read_eigenvector(blocksize,line)
+            vector = read_eigenvector(blocksize,line,f)
             vector_list.append(vector)
 
     f.close()
