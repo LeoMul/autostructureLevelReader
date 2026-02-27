@@ -486,9 +486,9 @@ class energy_eigenstate_as_ic:
         #output stuff
         self.output_string = '{:5},'
         if(unit==2):
-            self.output_string+= '{:12.3f}'
+            self.output_string+= '{:15.3f}'
         else:
-            self.output_string+= '{:12.8f}'    
+            self.output_string+= '{:15.8f}'    
         self.output_string += ',     {},  {:>4},     {}'
         
         
