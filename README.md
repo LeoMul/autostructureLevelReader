@@ -1,6 +1,6 @@
 # autostructureLevelReader
 
-The python code hosted here will read the standard oic (... and olg) files of [`autostructure`](https://amdpp.phys.strath.ac.uk/autos/). At present the code will only reliably read outputs from intermediate coupling from an `oic` file. There is limited support for reading the `TERMS` output in an LS case.  I will eventually add support for configuration-average. If you ran `autostructure` with `mprint=5`, then this code can also read the corresponding eigenvector outputs from the file `olg`. At present the code does not support continuua states.
+The python code hosted here will read the standard oic (... and olg) files of [`autostructure`](https://amdpp.phys.strath.ac.uk/autos/). At present the code will only reliably read outputs from intermediate coupling from an `oic` file. There is limited support for reading the `TERMS` output in an LS case.  I will eventually add support for configuration-average. If you ran `autostructure` with `mprint=5`, then this code can also read the corresponding eigenvector outputs from the file `olg`. At present the code supports continuua states - but be warned this is in development - and currently not for the eigenvector and just the information in the `oic` output.
 
 A tool like this is (opinions may vary) essential for spectral identification. Its only requirement is numpy.
 
@@ -29,6 +29,8 @@ The main ones are as follows,
 
 ***Structure Diagnosing***:
 \
+`-k` flags the code to look for continuua states. It is presently not coded to work with eigenvector mode, or LS coupling.
+
 `-g num` will change the level output such that the `num`'th level has zero energy. Useful for diagnosing unconverged structures. Note that `num` is zero-indexed here, so `-g 1` corresponds to making the first excited state (level 2) the ground.
 
 
