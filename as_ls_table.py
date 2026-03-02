@@ -30,6 +30,8 @@ parser.add_argument('-u', '--unit',          help='Unit: Ryd=0,eV=1,cm=2. Defaul
 # Might be useful for checking that relative spacings are still fine in a bad structure.
 parser.add_argument('-g', '--ground',        help='Ground override, level   index.',type=int)
 
+parser.add_argument('-k','--continuum',action='store_true',help = 'flags presence of a continuua')
+
 #Debugging flag, for reading oic files - can force the reading to begin at different point.
 #Contact the author if you find yourself needing this. 
 parser.add_argument('-s', '--override',  help='Reading override, for debugging',type=int)
@@ -49,7 +51,10 @@ else:
     else:
         user_num_levels = 2**63
 
-    das_file_numpy,orbital_strings,num_csfs,lambda_array,orbital_L = readConfigFile('CONFIG.DAT')
+    if args.continuum:
+        das_file_numpy,orbital_strings,num_csfs,lambda_array,orbital_L = getConfigsContinuum(args.oic)
+    else:
+        das_file_numpy,orbital_strings,num_csfs,lambda_array,orbital_L = readConfigFile('CONFIG.DAT')
 
     num_orbitals_shown = len(orbital_strings)
     #if args.num_orbitals:
@@ -113,6 +118,9 @@ else:
         if args.override:
             override = int(args.override)
         
+        continuum = False 
+        if (args.continuum):
+            continuum = True
         
         states = read_oic_into_list_of_eigenstates(args.oic,csf_strings,user_num_levels,factor,unit,core,override)
         

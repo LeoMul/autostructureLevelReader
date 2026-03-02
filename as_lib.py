@@ -2,6 +2,70 @@ import numpy as np
 
 ANGULAR_SYMBOLS = ['s','p','d','f','g','h','i','k','l','m','o','p']
 
+def translate_angular(angular_number):
+    if angular_number < len(ANGULAR_SYMBOLS):
+        return ANGULAR_SYMBOLS[angular_number]
+    else:
+        return str(angular_number)
+    
+def decodeEissner(eissnerString,numorbs):
+    #csfstring = ''
+    cf = np.zeros(numorbs,dtype=int)
+    for ii in range(0,len(eissnerString),3):
+        this_isolated = eissnerString[ii:ii+3]
+        occ = int(this_isolated[0:2])%50
+        orbindex = int(this_isolated[2],36)
+        cf[orbindex-1] = occ
+        #print(orbindex,occ)
+    #print('next')
+    #print(cf)
+    return cf
+
+def getConfigsContinuum(oicfile):
+    oic = open(oicfile,'r')
+    
+    oic.readline()
+    orbline = oic.readline()
+    numcf = int(orbline[0:3])
+    orbsIsolated = orbline[29:].replace('\n','')
+    orbital_strings = []
+    princN = []
+    orbital_L = []
+    for ii in range(0,len(orbsIsolated),5):
+        thisOrb = orbsIsolated[ii:ii+5]
+        #print(thisOrb)
+        princN.append(int(thisOrb[0:3]))
+        orbital_L.append(int(thisOrb[3:]))
+        string = thisOrb[0:3] + translate_angular(int(thisOrb[3:]))
+        orbital_strings.append(string.replace(' ',''))
+    
+    num_orbs = len(orbital_strings)
+    
+    das_file_numpy = np.zeros([numcf,num_orbs],dtype = int)
+    
+    #print(orbital_strings)
+    done = False 
+    ncf =0 
+    while (not done):
+        line = oic.readline()
+        check = line.split()[0]
+        if check == 'I-S':
+            done = True 
+            break 
+        else:
+            #kcorstring = line[10:17]
+            #print(kcorstring)
+            eissner = line[18:].replace('\n','')
+            #print(eissner)
+            #csfs_eissner.append(decodeEissner(eissner))
+            das_file_numpy[ncf,:] = decodeEissner(eissner,num_orbs)
+            ncf += 1
+    oic.close()
+    #print(das_file_numpy)
+    num_csfs = numcf 
+    lambda_array = np.ones(num_orbs)
+    return das_file_numpy,orbital_strings,num_csfs,lambda_array,orbital_L
+
 def display_states(states,header,ground):
     
     #displays the eigenvec
@@ -381,8 +445,8 @@ def decodeOICLineFormatted(lineString):
     line.append( int(lineString[25:30]))
     line.append( int(lineString[30:35]))
     line.append( float(lineString[35:50]))
-    if len(lineString)>56:
-        print('continuum')
+    #if len(lineString)>56:
+    #    print('continuum')
     #print(line)
     
     return line 
@@ -432,7 +496,10 @@ def read_oic_into_list_of_eigenstates(oic,csf_strings,num_levels,factor,unit,cor
     fracJ = False
     for kk in range(0,num_levels):
         #line = level_data[kk]
+        iamContinuum = False 
         line = decodeOICLineFormatted(gg.readline())
+        if (len(line) >50):
+            iamContinuum = True
         #print(line)
         if int(line[5]) % 2 ==1:
             fracJ = True
@@ -448,7 +515,7 @@ def read_oic_into_list_of_eigenstates(oic,csf_strings,num_levels,factor,unit,cor
         tt = int(line[2])
         multiplicity = line[3]
         angular = line[4]
-        cf_number = int(line[6]-1)
+        cf_number = abs(int(line[6]))-1
         energy_ryd = line[7]*factor
 
         parity = 0
@@ -488,11 +555,6 @@ def read_oic_into_list_of_eigenstates(oic,csf_strings,num_levels,factor,unit,cor
     gg.close()
     return states
 
-def translate_angular(angular_number):
-    if angular_number < len(ANGULAR_SYMBOLS):
-        return ANGULAR_SYMBOLS[angular_number]
-    else:
-        return str(angular_number)
 
 RYDBERG_CM = 109737.316 
 
