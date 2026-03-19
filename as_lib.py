@@ -445,6 +445,12 @@ def decodeOICLineFormatted(lineString):
     line.append( int(lineString[25:30]))
     line.append( int(lineString[30:35]))
     line.append( float(lineString[35:50]))
+    
+    if len(lineString) > 52: 
+        line.append(int(lineString[50:]))
+    else:
+        line.append(0)
+        
     #if len(lineString)>56:
     #    print('continuum')
     #print(line)
@@ -500,6 +506,7 @@ def read_oic_into_list_of_eigenstates(oic,csf_strings,num_levels,factor,unit,cor
         line = decodeOICLineFormatted(gg.readline())
         if (len(line) >50):
             iamContinuum = True
+        
         #print(line)
         if int(line[5]) % 2 ==1:
             fracJ = True
@@ -535,7 +542,8 @@ def read_oic_into_list_of_eigenstates(oic,csf_strings,num_levels,factor,unit,cor
             tt,
             unit,
             factor,
-            j_string
+            j_string,
+            line[-1]
         )
         states.append(state)
 
@@ -575,9 +583,10 @@ class energy_eigenstate_as_ic:
                  unit,
                  factor,
                  j_string,
+                 continuum_number=0,
                  numorbsshown=[]
                  ):
-
+        self.continuum_number = continuum_number
         self.energy_ryd         = energy_ryd
         self.energy_wavenumber  = energy_ryd * RYDBERG_CM
         self.angular_momentum_j = angular_momentum_j
@@ -597,7 +606,7 @@ class energy_eigenstate_as_ic:
             self.output_string+= '{:15.3f}'
         else:
             self.output_string+= '{:15.8f}'    
-        self.output_string += ',     {},  {:>4},     {}'
+        self.output_string += ',     {},  {:>4},     {:5},     {:5}'
         
         
         term_string = '('+str(int(angular_momentum_S)) + translate_angular(int(angular_momentum_L))
@@ -622,7 +631,8 @@ class energy_eigenstate_as_ic:
             self.energy_ryd-shift,
             self.label_string,
             self.j_string,
-            self.lv_number
+            self.lv_number,
+            self.continuum_number
         )
             print(self.output_string)
 
